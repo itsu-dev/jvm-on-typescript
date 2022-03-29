@@ -1,3 +1,4 @@
+import { getConstantPoolInfo } from "../../jvm.js";
 export var CONSTANT_CLASS = 7;
 export var CONSTANT_FIELD_REF = 9;
 export var CONSTANT_METHOD_REF = 10;
@@ -18,5 +19,8 @@ export var isConstantFieldRefInfo = function (arg) {
         typeof arg.tag === "number" &&
         typeof arg.classIndex === "number" &&
         typeof arg.nameAndTypeIndex === "number";
+};
+export var readUtf8FromConstantPool = function (constantPool, index) {
+    return new TextDecoder("utf-8").decode(getConstantPoolInfo(constantPool, index).info.bytes.view);
 };
 //# sourceMappingURL=ConstantPoolInfo.js.map

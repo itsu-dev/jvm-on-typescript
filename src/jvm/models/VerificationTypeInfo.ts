@@ -1,13 +1,13 @@
 export type VerificationTypeInfo = {
-    topVariableInfo: TopVariableInfo,
-    integerVariableInfo: IntegerVariableInfo,
-    floatVariableInfo: FloatVariableInfo,
-    longVariableInfo: LongVariableInfo,
-    doubleVariableInfo: DoubleVariableInfo,
-    nullVariableInfo: NullVariableInfo,
-    uninitializedThisVariableInfo: UnInitializedThisVariableInfo,
-    objectVariableInfo: ObjectVariableInfo,
-    uninitializedVariableInfo: UninitializedVariableInfo
+    info: TopVariableInfo
+        | IntegerVariableInfo
+        | FloatVariableInfo
+        | LongVariableInfo
+        | DoubleVariableInfo
+        | NullVariableInfo
+        | UnInitializedThisVariableInfo
+        | ObjectVariableInfo
+        | UninitializedVariableInfo
 }
 
 export type TopVariableInfo = {

@@ -15,27 +15,25 @@ import {
     CONSTANT_STRING,
     CONSTANT_UTF8, ConstantClassInfo, ConstantMethodRefInfo, ConstantNameAndTypeInfo,
     ConstantPoolInfo, ConstantStringInfo,
-    ConstantUtf8Info,
-    isConstantFieldRefInfo
+    isConstantFieldRefInfo, readUtf8FromConstantPool
 } from "./models/info/ConstantPoolInfo.js";
 import {
     Attribute,
     CodeAttribute,
-    ExceptionTable,
-    LineNumberTable,
-    LineNumberTableAttribute
+    readAttributes
 } from "./models/info/AttributeInfo.js";
 import {MethodInfo} from "./models/info/MethodInfo.js";
 import {ClassFile} from "./models/ClassFile.js";
-import {ByteBuffer} from "./ByteBuffer.js";
+import {ByteBuffer} from "./utils/ByteBuffer.js";
 import {Throwable} from "./lib/java/lang/Throwable.js";
 import {NoSuchFieldError} from "./lib/java/lang/NoSuchFieldError.js";
 import {FieldInfo} from "./models/info/FieldInfo.js";
+import {Frame} from "./models/Frame.js";
+import {ArrayVariable, IntVariable} from "./models/Variable.js";
 
 export class JVM {
 
     buffer: ByteBuffer
-    operandStack: Array<any> = [];
 
     constructor(array: ArrayBuffer) {
         this.buffer = new ByteBuffer(array);
@@ -48,21 +46,26 @@ export class JVM {
         }
 
         const classFile = this.loadClassFile();
+        console.log(classFile)
         this.invoke("main", classFile.constantPool, classFile.methods);
     }
 
     private async invoke(methodName: string, constantPool: ConstantPoolInfo[], methods: MethodInfo[]) {
         for (const method of methods) {
-            const name = this.readUtf8FromConstantPool(constantPool, method.nameIndex);
+            const name = readUtf8FromConstantPool(constantPool, method.nameIndex);
             if (name !== methodName) continue;
 
             const codeAttributes =
-                method.attributes.filter(attribute => this.readUtf8FromConstantPool(constantPool, attribute.attributeNameIndex) === "Code");
+                method.attributes.filter(attribute => readUtf8FromConstantPool(constantPool, attribute.attributeNameIndex) === "Code");
             if (!codeAttributes || codeAttributes.length == 0) return;
 
             const codeAttribute = codeAttributes[0]!! as CodeAttribute;
             const code = codeAttribute.code;
             code.resetOffset();
+
+            const argsCount = readUtf8FromConstantPool(constantPool, method.descriptorIndex).split(";").length - 1;
+            const frame = new Frame(codeAttribute.maxLocals - argsCount, constantPool);
+            frame.locals.push(new ArrayVariable([]));
 
             let opcode = code.getUint8();
             while (code.offset < code.getLength()) {
@@ -81,13 +84,13 @@ export class JVM {
                         const fieldRef = constantPoolInfo.info;
                         const classRef = this.getConstantPoolInfo(constantPool, fieldRef.classIndex).info as ConstantClassInfo
                         const fieldNameAndTypeRef = this.getConstantPoolInfo(constantPool, fieldRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo
-                        const module = await import("./lib/" + this.readUtf8FromConstantPool(constantPool, classRef.nameIndex) + ".js")
-                        const fieldClassFileName = this.readUtf8FromConstantPool(constantPool, fieldNameAndTypeRef.nameIndex);
+                        const module = await import("./lib/" + readUtf8FromConstantPool(constantPool, classRef.nameIndex) + ".js")
+                        const fieldClassFileName = readUtf8FromConstantPool(constantPool, fieldNameAndTypeRef.nameIndex);
 
-                        const map = new Map<string, any>();
-                        map.set("callable", module[this.getClassName(this.readUtf8FromConstantPool(constantPool, classRef.nameIndex))][fieldClassFileName]);
-                        map.set("return", this.readUtf8FromConstantPool(constantPool, fieldNameAndTypeRef.descriptorIndex));
-                        this.operandStack.push(map);
+                        frame.operandStack.push({
+                            "callable": module[this.getClassName(readUtf8FromConstantPool(constantPool, classRef.nameIndex))][fieldClassFileName],
+                            "return": readUtf8FromConstantPool(constantPool, fieldNameAndTypeRef.descriptorIndex)
+                        });
 
                         break;
                     }
@@ -96,7 +99,7 @@ export class JVM {
                     case 0x12: {
                         const index = code.getUint8();
                         const stringRef = this.getConstantPoolInfo(constantPool, index).info as ConstantStringInfo;
-                        this.operandStack.push(this.readUtf8FromConstantPool(constantPool, stringRef.stringIndex));
+                        frame.operandStack.push(readUtf8FromConstantPool(constantPool, stringRef.stringIndex));
                         break;
                     }
 
@@ -105,22 +108,216 @@ export class JVM {
                         const indexByte1 = code.getUint8();
                         const indexByte2 = code.getUint8();
                         const methodRef = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
-                        const methodNameAndTypeRef = this.getConstantPoolInfo(constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
-                        const invokeMethodName = this.readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.nameIndex);
-                        const argumentsCount = this.readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.descriptorIndex).split(";").length - 1;
+                        const methodNameAndTypeRef = getConstantPoolInfo(constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
+                        const invokeMethodName = readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.nameIndex);
+                        const descriptor = readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.descriptorIndex).split(")")
+                        const argumentText = descriptor[0].replace("(", "");
+                        const argumentsCount = argumentText.includes(";") ? argumentText.split(";").length - 1 : (argumentText === "" ? 0 : argumentText.split(";").length)
                         const methodArgs = [];
 
                         for (let i = 0; i < argumentsCount; i++) {
-                            methodArgs.push(this.operandStack.pop());
+                            methodArgs.push(frame.operandStack.pop());
                         }
 
-                        (this.operandStack.pop() as Map<string, any>).get("callable")[invokeMethodName](...methodArgs);
+                        if (descriptor[descriptor.length - 1] !== "V") {
+                            const result = frame.operandStack.pop()["callable"][invokeMethodName](...methodArgs);
+                            if (typeof result === "object") {
+                                frame.operandStack.push({
+                                    "callable": result
+                                });
+                            } else {
+                                frame.operandStack.push(result);
+                            }
+
+                        } else {
+                            frame.operandStack.pop()["callable"][invokeMethodName](...methodArgs)
+                        }
+
+                        break;
+                    }
+
+                    // iconst_m1
+                    case 0x2: {
+                        frame.operandStack.push(-1);
+                        break
+                    }
+
+                    // iconst_0
+                    case 0x3: {
+                        frame.operandStack.push(0);
+                        break
+                    }
+
+                    // iconst_1
+                    case 0x4: {
+                        frame.operandStack.push(1);
+                        break
+                    }
+
+                    // iconst_2
+                    case 0x5: {
+                        frame.operandStack.push(2);
+                        break
+                    }
+
+                    // iconst_3
+                    case 0x6: {
+                        frame.operandStack.push(3);
+                        break
+                    }
+
+                    // iconst_4
+                    case 0x7: {
+                        frame.operandStack.push(4);
+                        break
+                    }
+
+                    // iconst_5
+                    case 0x8: {
+                        frame.operandStack.push(5);
+                        break
+                    }
+
+                    // bipush
+                    case 0x10: {
+                        const data = code.getInt8();
+                        frame.operandStack.push(data);
+                        break;
+                    }
+
+                    // iload
+                    case 0x15: {
+                        const index = code.getUint8();
+                        frame.operandStack.push(frame.locals[index].getValue());
+                        break;
+                    }
+
+                    // iload_0
+                    case 0x1a: {
+                        frame.operandStack.push(frame.locals[0].getValue());
+                        break;
+                    }
+
+                    // iload_1
+                    case 0x1b: {
+                        frame.operandStack.push(frame.locals[1].getValue());
+                        break;
+                    }
+
+                    // iload_2
+                    case 0x1c: {
+                        frame.operandStack.push(frame.locals[2].getValue());
+                        break;
+                    }
+
+                    // iload_3
+                    case 0x1d: {
+                        frame.operandStack.push(frame.locals[3].getValue());
+                        break;
+                    }
+
+                    // istore
+                    case 0x36: {
+                        const index = code.getUint8();
+                        if (frame.locals.length - 1 < index) {
+                            frame.locals.push(new IntVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(index, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+                    
+                    // istore_0
+                    case 0x3b: {
+                        if (frame.locals.length - 1 < 0) {
+                            frame.locals.push(new IntVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(0, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // istore_1
+                    case 0x3c: {
+                        if (frame.locals.length - 1 < 1) {
+                            frame.locals.push(new IntVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(1, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // istore_2
+                    case 0x3d: {
+                        if (frame.locals.length - 1 < 2) {
+                            frame.locals.push(new IntVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(2, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // istore_3
+                    case 0x3e: {
+                        if (frame.locals.length - 1 < 3) {
+                            frame.locals.push(new IntVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(3, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // dup
+                    case 0x59: {
+                        const original = frame.operandStack.pop();
+                        const copied = Object.assign(Object.create(Object.getPrototypeOf(original)), original);
+                        const copied2 = Object.assign(Object.create(Object.getPrototypeOf(original)), original);
+                        frame.operandStack.push(copied);
+                        frame.operandStack.push(copied2);
+                        break;
+                    }
+
+                    // iadd
+                    case 0x60: {
+                        frame.operandStack.push(frame.operandStack.pop() + frame.operandStack.pop());
                         break;
                     }
 
                     // return
                     case 0xb1: {
                         return;
+                    }
+
+                    // invokespecial
+                    case 0xb7: {
+                        const indexByte1 = code.getUint8();
+                        const indexByte2 = code.getUint8();
+                        const methodRef = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
+                        const methodNameAndTypeRef = getConstantPoolInfo(constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
+                        const argumentsCount = readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.descriptorIndex).split(";").length - 1;
+                        const methodArgs = [];
+
+                        for (let i = 0; i < argumentsCount; i++) {
+                            methodArgs.push(frame.operandStack.pop());
+                        }
+
+                        frame.operandStack.pop()["callable"]["constructor"](...methodArgs)
+
+                        break;
+                    }
+
+                    // new
+                    case 0xbb: {
+                        const indexByte1 = code.getUint8();
+                        const indexByte2 = code.getUint8();
+                        const classRef = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantClassInfo;
+                        const module = await import("./lib/" + readUtf8FromConstantPool(constantPool, classRef.nameIndex) + ".js")
+
+                        frame.operandStack.push({
+                            "callable": new module[this.getClassName(readUtf8FromConstantPool(constantPool, classRef.nameIndex))]()
+                        });
+
+                        break;
                     }
                 }
                 opcode = code.getUint8()
@@ -254,7 +451,7 @@ export class JVM {
             const descriptorIndex = this.buffer.getUint16();
             const attributesCount = this.buffer.getUint16();
 
-            const attributes: Attribute[] = this.loadAttributes(constantPool, attributesCount);
+            const attributes: Attribute[] = readAttributes(constantPool, attributesCount, this.buffer);
 
             fields.push({
                 accessFlags: accessFlags,
@@ -273,7 +470,7 @@ export class JVM {
             const nameIndex = this.buffer.getUint16();
             const descriptorIndex = this.buffer.getUint16();
             const attributeCount = this.buffer.getUint16();
-            const attributes = this.loadAttributes(constantPool, attributeCount);
+            const attributes = readAttributes(constantPool, attributeCount, this.buffer);
 
             methods.push({
                 accessFlags: accessFlags,
@@ -304,89 +501,6 @@ export class JVM {
         }
     }
 
-    private loadAttributes(constantPool: ConstantPoolInfo[], length: number): Attribute[] {
-        const result: Attribute[] = [];
-
-        for (let j = 0; j < length; j++) {
-            const attributeNameIndex = this.buffer.getUint16();
-            const attributeLength = this.buffer.getUint32();
-            const name = this.readUtf8FromConstantPool(constantPool, attributeNameIndex);
-
-            switch (name) {
-                case "Code": {
-                    const maxStack = this.buffer.getUint16();
-                    const maxLocals = this.buffer.getUint16();
-                    const codeLength = this.buffer.getUint32();
-
-                    const code: ByteBuffer = new ByteBuffer(new ArrayBuffer(codeLength));
-                    for (let i = 0; i < codeLength; i++) {
-                        code.setUint8(this.buffer.getUint8());
-                    }
-
-                    const exceptionTableLength = this.buffer.getUint16();
-
-                    const exceptionTable: ExceptionTable[] = [];
-                    for (let i = 0; i < exceptionTableLength; i++) {
-                        exceptionTable.push({
-                            startPc: this.buffer.getUint16(),
-                            endPc: this.buffer.getUint16(),
-                            handlerPc: this.buffer.getUint16(),
-                            catchType: this.buffer.getUint16()
-                        })
-                    }
-
-                    const attributesCount = this.buffer.getUint16();
-                    let attributes: Attribute[] = [];
-
-                    if (attributesCount > 0) {
-                        attributes = this.loadAttributes(constantPool, attributesCount);
-                    }
-
-                    const codeAttribute: CodeAttribute = {
-                        attributeNameIndex: attributeNameIndex,
-                        attributeLength: attributeLength,
-                        info: [],
-                        maxStack: maxStack,
-                        maxLocals: maxLocals,
-                        codeLength: codeLength,
-                        code: code,
-                        exceptionTableLength: exceptionTableLength,
-                        exceptionTable: exceptionTable,
-                        attributesCount: attributesCount,
-                        attributes: attributes
-                    }
-
-                    result.push(codeAttribute)
-                    break;
-                }
-
-                case "LineNumberTable": {
-                    const lineNumberTableLength = this.buffer.getUint16();
-                    const lineNumberTable: LineNumberTable[] = [];
-                    for (let i = 0; i < lineNumberTableLength; i++) {
-                        lineNumberTable.push({
-                            startPc: this.buffer.getUint16(),
-                            lineNumber: this.buffer.getUint16()
-                        })
-                    }
-
-                    const lineNumberTableAttribute: LineNumberTableAttribute = {
-                        attributeNameIndex: attributeNameIndex,
-                        attributeLength: attributeLength,
-                        info: [],
-                        lineNumberTableLength: lineNumberTableLength,
-                        lineNumberTable: lineNumberTable
-                    }
-
-                    result.push(lineNumberTableAttribute);
-                    break;
-                }
-            }
-        }
-
-        return result;
-    }
-
     private throwErrorOrException(throwable: Throwable) {
         throwable.printStackTrace()
     }
@@ -395,13 +509,13 @@ export class JVM {
         return constantPool[index - 1]
     }
 
-    private readUtf8FromConstantPool(constantPool: ConstantPoolInfo[], index: number): string {
-        return new TextDecoder("utf-8").decode((this.getConstantPoolInfo(constantPool, index).info as ConstantUtf8Info).bytes.view);
-    }
-
     private getClassName(packageName: string): string {
         const split = packageName.split("/");
         return split[split.length - 1];
     }
 
+}
+
+export const getConstantPoolInfo = (constantPool: ConstantPoolInfo[], index: number): ConstantPoolInfo => {
+    return constantPool[index - 1]
 }

@@ -6,28 +6,28 @@ export class ByteBuffer {
         this.view = new DataView(array);
     }
 
+    getInt8() {
+        const result = this.view.getInt8(this.offset);
+        this.offset += 1;
+        return result;
+    }
+
     getUint8() {
         const result = this.view.getUint8(this.offset);
         this.offset += 1;
-        return result
+        return result;
     }
 
     getUint16() {
         const result = this.view.getUint16(this.offset);
         this.offset += 2;
-        return result
+        return result;
     }
 
     getUint32() {
         const result = this.view.getUint32(this.offset);
         this.offset += 4;
-        return result
-    }
-
-    getBigUint64() {
-        const result = this.view.getBigUint64(this.offset);
-        this.offset += 8;
-        return result
+        return result;
     }
 
     setUint8(n: number) {
@@ -43,11 +43,6 @@ export class ByteBuffer {
     setUint32(n: number) {
         this.view.setUint32(this.offset, n);
         this.offset += 4;
-    }
-
-    setBigUint64(n: bigint) {
-        this.view.setBigUint64(this.offset, n);
-        this.offset += 8;
     }
 
     resetOffset() {

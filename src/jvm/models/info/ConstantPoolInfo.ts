@@ -1,4 +1,5 @@
-import {ByteBuffer} from "../../ByteBuffer.js";
+import {ByteBuffer} from "../../utils/ByteBuffer.js";
+import {getConstantPoolInfo} from "../../jvm.js";
 
 export const CONSTANT_CLASS = 7;
 export const CONSTANT_FIELD_REF = 9;
@@ -106,4 +107,8 @@ export interface ConstantInvokeDynamicInfo extends Constant {
     tag: number,
     bootstrapMethodAttrIndex: number,
     nameAndTypeIndex: number
+}
+
+export const readUtf8FromConstantPool = (constantPool: ConstantPoolInfo[], index: number): string => {
+    return new TextDecoder("utf-8").decode((getConstantPoolInfo(constantPool, index).info as ConstantUtf8Info).bytes.view);
 }

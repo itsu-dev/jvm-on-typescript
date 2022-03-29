@@ -1,13 +1,13 @@
 import {VerificationTypeInfo} from "./VerificationTypeInfo.js";
 
 export type StackMapFrame = {
-    sameFrame: SameFrame,
-    sameLocals1StackItemFrame: SameLocals1StackItemFrame,
-    sameLocals1StackItemFrameExtended: SameLocals1StackItemFrameExtended,
-    chopFrame: ChopFrame,
-    saneFrameExtended: SameFrameExtended,
-    appendFrame: AppendFrame,
-    fullFrame: FullFrame
+    frame: SameFrame
+        | SameLocals1StackItemFrame
+        | SameLocals1StackItemFrameExtended
+        | ChopFrame
+        | SameFrameExtended
+        | AppendFrame
+        | FullFrame
 }
 
 export type SameFrame = {
