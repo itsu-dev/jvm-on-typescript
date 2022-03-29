@@ -27,3 +27,4 @@ jvm.load();  // Load class file and invoke main method.
 - [JVM Stacks and Stack Frames](https://alvinalexander.com/scala/fp-book/recursion-jvm-stacks-stack-frames/)
 - [Hotspot JVMのFrameについて (About Frame on Hotspot JVM)](https://blog.tiqwab.com/2019/08/25/openjdk-frame.html#:~:text=Hotspot%20JVM%20%E3%81%AE%20Template%20Interpreter,%E3%82%82%E3%81%AE%E3%81%8C%E5%90%AB%E3%81%BE%E3%82%8C%E3%81%BE%E3%81%99%E3%80%82)
 - [Use cases of jvm dup instruction (StackOverFlow)](https://stackoverflow.com/questions/54781284/use-cases-of-jvm-dup-instruction)
+- [コンピュータシステムの理論と実装 / 訳: 齋藤 康毅 (The Elements of Computing Systems / Noam Nisan, Shimon Schocken)](https://www.oreilly.co.jp/books/9784873117126/)
