@@ -1,0 +1,22 @@
+# Project exclude paths
+/src/jvm/lib/java/io/OutputStream.js
+/src/jvm/lib/java/io/OutputStream.js.map
+/src/jvm/lib/java/io/PrintStream.js
+/src/jvm/lib/java/io/PrintStream.js.map
+/src/jvm/lib/java/io/Serializable.js
+/src/jvm/lib/java/io/Serializable.js.map
+/src/jvm/lib/java/lang/Error.js
+/src/jvm/lib/java/lang/Error.js.map
+/src/jvm/lib/java/lang/NoSuchFieldError.js
+/src/jvm/lib/java/lang/NoSuchFieldError.js.map
+/src/jvm/lib/java/lang/System.js
+/src/jvm/lib/java/lang/System.js.map
+/src/jvm/lib/java/lang/Throwable.js
+/src/jvm/lib/java/lang/Throwable.js.map
+/src/jvm/models/ClassFile.js.map
+/src/jvm/models/VerificationTypeInfo.js
+/src/jvm/models/VerificationTypeInfo.js.map
+/src/jvm/ByteBuffer.js
+/src/jvm/ByteBuffer.js.map
+/src/jvm/jvm.js.map
+/src/main.js.map

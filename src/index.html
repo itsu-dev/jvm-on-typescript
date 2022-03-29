@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JVM Test</title>
+</head>
+
+<style>
+    .contents {
+        display: flex;
+    }
+
+    .contents div {
+        box-sizing: border-box;
+        width: 50%;
+        padding: 8px;
+    }
+
+    textarea {
+        width: 100%;
+        height: 500px;
+        padding: 4px;
+        border: #333 solid 2px;
+    }
+</style>
+
+<body>
+<input type="file" id="file_input" />
+<div class="contents">
+    <div>
+        <label for="in">Standard Input</label>
+        <textarea id="in"></textarea>
+    </div>
+
+    <div>
+        <label for="out">Standard Output</label>
+        <textarea id="out"></textarea>
+    </div>
+</div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "target": "ES5",
+    "module": "ES2020",
+    "lib": ["ES2017", "dom"]
+  }
+}
