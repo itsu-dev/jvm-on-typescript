@@ -29,7 +29,7 @@ import {Throwable} from "./lib/java/lang/Throwable.js";
 import {NoSuchFieldError} from "./lib/java/lang/NoSuchFieldError.js";
 import {FieldInfo} from "./models/info/FieldInfo.js";
 import {Frame} from "./models/Frame.js";
-import {ArrayVariable, IntVariable} from "./models/Variable.js";
+import {ArrayVariable, DoubleVariable, FloatVariable, IntVariable, LongVariable} from "./models/Variable.js";
 
 export class JVM {
 
@@ -70,6 +70,12 @@ export class JVM {
             let opcode = code.getUint8();
             while (code.offset < code.getLength()) {
                 switch (opcode) {
+
+                    // nop
+                    case 0x00: {
+                        break;
+                    }
+
                     // getstatic
                     case 0xb2: {
                         const indexByte1 = code.getUint8();
@@ -137,45 +143,87 @@ export class JVM {
                     }
 
                     // iconst_m1
-                    case 0x2: {
+                    case 0x02: {
                         frame.operandStack.push(-1);
                         break
                     }
 
                     // iconst_0
-                    case 0x3: {
+                    case 0x03: {
                         frame.operandStack.push(0);
                         break
                     }
 
                     // iconst_1
-                    case 0x4: {
+                    case 0x04: {
                         frame.operandStack.push(1);
                         break
                     }
 
                     // iconst_2
-                    case 0x5: {
+                    case 0x05: {
                         frame.operandStack.push(2);
                         break
                     }
 
                     // iconst_3
-                    case 0x6: {
+                    case 0x06: {
                         frame.operandStack.push(3);
                         break
                     }
 
                     // iconst_4
-                    case 0x7: {
+                    case 0x07: {
                         frame.operandStack.push(4);
                         break
                     }
 
                     // iconst_5
-                    case 0x8: {
+                    case 0x08: {
                         frame.operandStack.push(5);
                         break
+                    }
+
+                    // lconst_0
+                    case 0x09: {
+                        frame.operandStack.push(1);
+                        break;
+                    }
+
+                    // lconst_1
+                    case 0x0a: {
+                        frame.operandStack.push(2);
+                        break;
+                    }
+
+                    // fconst_0
+                    case 0x0b: {
+                        frame.operandStack.push(0.0);
+                        break;
+                    }
+
+                    // fconst_1
+                    case 0x0c: {
+                        frame.operandStack.push(1.0);
+                        break;
+                    }
+
+                    // fconst_2
+                    case 0x0d: {
+                        frame.operandStack.push(2.0);
+                        break;
+                    }
+
+                    // dconst_0
+                    case 0x0e: {
+                        frame.operandStack.push(0.0);
+                        break;
+                    }
+
+                    // dconst_1
+                    case 0x0f: {
+                        frame.operandStack.push(1.0);
+                        break;
                     }
 
                     // bipush
@@ -187,6 +235,27 @@ export class JVM {
 
                     // iload
                     case 0x15: {
+                        const index = code.getUint8();
+                        frame.operandStack.push(frame.locals[index].getValue());
+                        break;
+                    }
+
+                    // lload
+                    case 0x16: {
+                        const index = code.getUint8();
+                        frame.operandStack.push(frame.locals[index].getValue());
+                        break;
+                    }
+
+                    // fload
+                    case 0x17: {
+                        const index = code.getUint8();
+                        frame.operandStack.push(frame.locals[index].getValue());
+                        break;
+                    }
+
+                    // dload
+                    case 0x18: {
                         const index = code.getUint8();
                         frame.operandStack.push(frame.locals[index].getValue());
                         break;
@@ -216,6 +285,78 @@ export class JVM {
                         break;
                     }
 
+                    // lload_0
+                    case 0x1e: {
+                        frame.operandStack.push(frame.locals[0].getValue());
+                        break;
+                    }
+
+                    // lload_1
+                    case 0x1f: {
+                        frame.operandStack.push(frame.locals[1].getValue());
+                        break;
+                    }
+
+                    // lload_2
+                    case 0x20: {
+                        frame.operandStack.push(frame.locals[2].getValue());
+                        break;
+                    }
+
+                    // lload_3
+                    case 0x21: {
+                        frame.operandStack.push(frame.locals[3].getValue());
+                        break;
+                    }
+
+                    // fload_0
+                    case 0x22: {
+                        frame.operandStack.push(frame.locals[0].getValue());
+                        break;
+                    }
+
+                    // fload_1
+                    case 0x23: {
+                        frame.operandStack.push(frame.locals[1].getValue());
+                        break;
+                    }
+
+                    // fload_2
+                    case 0x24: {
+                        frame.operandStack.push(frame.locals[2].getValue());
+                        break;
+                    }
+
+                    // fload_3
+                    case 0x25: {
+                        frame.operandStack.push(frame.locals[3].getValue());
+                        break;
+                    }
+
+                    // dload_0
+                    case 0x26: {
+                        frame.operandStack.push(frame.locals[0].getValue());
+                        break;
+                    }
+
+                    // dload_1
+                    case 0x27: {
+                        frame.operandStack.push(frame.locals[1].getValue());
+                        break;
+                    }
+
+                    // dload_2
+                    case 0x28: {
+                        frame.operandStack.push(frame.locals[2].getValue());
+                        break;
+                    }
+
+                    // dload_3
+                    case 0x29: {
+                        frame.operandStack.push(frame.locals[3].getValue());
+                        break;
+                    }
+
                     // istore
                     case 0x36: {
                         const index = code.getUint8();
@@ -223,6 +364,39 @@ export class JVM {
                             frame.locals.push(new IntVariable(frame.operandStack.pop()));
                         } else {
                             frame.locals.splice(index, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // lstore
+                    case 0x37: {
+                        const index = code.getUint8();
+                        if (frame.locals.length - 1 < index) {
+                            frame.locals.push(new LongVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(index, 0, new LongVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // fstore
+                    case 0x38: {
+                        const index = code.getUint8();
+                        if (frame.locals.length - 1 < index) {
+                            frame.locals.push(new FloatVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(index, 0, new FloatVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // dstore
+                    case 0x39: {
+                        const index = code.getUint8();
+                        if (frame.locals.length - 1 < index) {
+                            frame.locals.push(new DoubleVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(index, 0, new DoubleVariable(frame.operandStack.pop()));
                         }
                         break;
                     }
@@ -263,6 +437,126 @@ export class JVM {
                             frame.locals.push(new IntVariable(frame.operandStack.pop()));
                         } else {
                             frame.locals.splice(3, 0, new IntVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // lstore_0
+                    case 0x3f: {
+                        if (frame.locals.length - 1 < 0) {
+                            frame.locals.push(new LongVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(0, 0, new LongVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // lstore_1
+                    case 0x40: {
+                        if (frame.locals.length - 1 < 1) {
+                            frame.locals.push(new LongVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(1, 0, new LongVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // lstore_2
+                    case 0x41: {
+                        if (frame.locals.length - 1 < 2) {
+                            frame.locals.push(new LongVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(2, 0, new LongVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // lstore_3
+                    case 0x42: {
+                        if (frame.locals.length - 1 < 3) {
+                            frame.locals.push(new LongVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(3, 0, new LongVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // fstore_0
+                    case 0x43: {
+                        if (frame.locals.length - 1 < 0) {
+                            frame.locals.push(new FloatVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(0, 0, new FloatVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // fstore_1
+                    case 0x44: {
+                        if (frame.locals.length - 1 < 1) {
+                            frame.locals.push(new FloatVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(1, 0, new FloatVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // fstore_2
+                    case 0x45: {
+                        if (frame.locals.length - 1 < 2) {
+                            frame.locals.push(new FloatVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(2, 0, new FloatVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // fstore_3
+                    case 0x46: {
+                        if (frame.locals.length - 1 < 3) {
+                            frame.locals.push(new FloatVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(3, 0, new FloatVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // dstore_0
+                    case 0x47: {
+                        if (frame.locals.length - 1 < 0) {
+                            frame.locals.push(new DoubleVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(0, 0, new DoubleVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // dstore_1
+                    case 0x48: {
+                        if (frame.locals.length - 1 < 1) {
+                            frame.locals.push(new DoubleVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(1, 0, new DoubleVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // dstore_2
+                    case 0x48: {
+                        if (frame.locals.length - 1 < 2) {
+                            frame.locals.push(new DoubleVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(2, 0, new DoubleVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // dstore_3
+                    case 0x4a: {
+                        if (frame.locals.length - 1 < 3) {
+                            frame.locals.push(new DoubleVariable(frame.operandStack.pop()));
+                        } else {
+                            frame.locals.splice(3, 0, new DoubleVariable(frame.operandStack.pop()));
                         }
                         break;
                     }
