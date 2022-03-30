@@ -97,8 +97,8 @@ This virtual machine specification compliants [Java Virtual Machine Specificatio
 |bastore|0x54||
 |castore|0x55||
 |sastore|0x56||
-|pop|0x57||
-|pop2|0x58||
+|pop|0x57|✓|
+|pop2|0x58|✓|
 |dup|0x59|✓|
 |dup_x1|0x5a||
 |dup_x2|0x5b||

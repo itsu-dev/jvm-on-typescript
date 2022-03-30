@@ -30,6 +30,8 @@ import {NoSuchFieldError} from "./lib/java/lang/NoSuchFieldError.js";
 import {FieldInfo} from "./models/info/FieldInfo.js";
 import {Frame} from "./models/Frame.js";
 import {ArrayVariable, DoubleVariable, FloatVariable, IntVariable, LongVariable} from "./models/Variable.js";
+import {Error} from "./lib/java/lang/Error.js";
+import {System} from "./lib/java/lang/System.js";
 
 export class JVM {
 
@@ -557,6 +559,33 @@ export class JVM {
                             frame.locals.push(new DoubleVariable(frame.operandStack.pop()));
                         } else {
                             frame.locals.splice(3, 0, new DoubleVariable(frame.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // pop
+                    case 0x57: {
+                        const data = frame.operandStack.pop();
+                        if (data instanceof DoubleVariable || data instanceof LongVariable) {
+                            System.err.println("Illegal operation: pop with category 2.")
+                            return;
+                        }
+                        break;
+                    }
+
+                    // pop2
+                    case 0x58: {
+                        const isCategory1 = (data) => data instanceof IntVariable || data instanceof FloatVariable
+                        const isCategory2 = (data) => data instanceof DoubleVariable || data instanceof LongVariable
+                        const value1 = frame.operandStack.pop();
+                        if (isCategory2(value1)) break;
+                        else if (isCategory1(value1)) {
+                            const value2 = frame.operandStack.pop();
+                            if (isCategory1(value2)) break;
+                            else {
+                                System.err.println("Illegal operation: pop2 with category 1.")
+                                return;
+                            }
                         }
                         break;
                     }

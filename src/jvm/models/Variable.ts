@@ -1,5 +1,6 @@
 export interface Variable {
     getValue();
+    getCategory();
 }
 
 export class IntVariable implements Variable {
@@ -12,6 +13,10 @@ export class IntVariable implements Variable {
 
     getValue() {
         return this.value;
+    }
+
+    getCategory() {
+        return 1;
     }
 
 }
@@ -28,6 +33,10 @@ export class LongVariable implements Variable {
         return this.value;
     }
 
+    getCategory() {
+        return 2;
+    }
+
 }
 
 export class FloatVariable implements Variable {
@@ -40,6 +49,10 @@ export class FloatVariable implements Variable {
 
     getValue() {
         return this.value;
+    }
+
+    getCategory() {
+        return 1;
     }
 
 }
@@ -56,6 +69,10 @@ export class DoubleVariable implements Variable {
         return this.value;
     }
 
+    getCategory() {
+        return 2;
+    }
+
 }
 
 export class StringVariable implements Variable {
@@ -70,6 +87,10 @@ export class StringVariable implements Variable {
         return this.value;
     }
 
+    getCategory() {
+        return 0;
+    }
+
 }
 
 export class ArrayVariable implements Variable {
@@ -82,6 +103,10 @@ export class ArrayVariable implements Variable {
 
     getValue() {
         return this.value;
+    }
+
+    getCategory() {
+        return 0;
     }
 
 }
