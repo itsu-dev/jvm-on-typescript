@@ -71,6 +71,7 @@ export class JVM {
 
             let opcode = code.getUint8();
             while (code.offset < code.getLength()) {
+                let nextOffset = code.offset;
                 switch (opcode) {
 
                     // nop
@@ -606,6 +607,457 @@ export class JVM {
                         break;
                     }
 
+                    // ladd
+                    case 0x61: {
+                        frame.operandStack.push(frame.operandStack.pop() + frame.operandStack.pop());
+                        break;
+                    }
+
+                    // fadd
+                    case 0x62: {
+                        frame.operandStack.push(frame.operandStack.pop() + frame.operandStack.pop());
+                        break;
+                    }
+
+                    // dadd
+                    case 0x63: {
+                        frame.operandStack.push(frame.operandStack.pop() + frame.operandStack.pop());
+                        break;
+                    }
+
+                    // isub
+                    case 0x64: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() - value2);
+                        break;
+                    }
+
+                    // lsub
+                    case 0x65: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() - value2);
+                        break;
+                    }
+
+                    // fsub
+                    case 0x66: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() - value2);
+                        break;
+                    }
+
+                    // dsub
+                    case 0x67: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() - value2);
+                        break;
+                    }
+
+                    // imul
+                    case 0x68: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() * value2);
+                        break;
+                    }
+
+                    // lmul
+                    case 0x69: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() * value2);
+                        break;
+                    }
+
+                    // fmul
+                    case 0x6a: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() * value2);
+                        break;
+                    }
+
+                    // dmul
+                    case 0x6b: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() * value2);
+                        break;
+                    }
+
+                    // idiv
+                    case 0x6c: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() / value2);
+                        break;
+                    }
+
+                    // ldiv
+                    case 0x6d: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() / value2);
+                        break;
+                    }
+
+                    // fdiv
+                    case 0x6e: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() / value2);
+                        break;
+                    }
+
+                    // ddiv
+                    case 0x6f: {
+                        const value2 = frame.operandStack.pop();
+                        frame.operandStack.push(frame.operandStack.pop() / value2);
+                        break;
+                    }
+
+                    // irem
+                    case 0x70: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 - (value1 / value2) * value2);
+                        break;
+                    }
+
+                    // lrem
+                    case 0x71: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 - (value1 / value2) * value2);
+                        break;
+                    }
+
+                    // frem
+                    case 0x72: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 - (value1 / value2) * value2);
+                        break;
+                    }
+
+                    // drem
+                    case 0x73: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 - (value1 / value2) * value2);
+                        break;
+                    }
+
+                    // ineg
+                    case 0x74: {
+                        frame.operandStack.push(-frame.operandStack.pop());
+                        break;
+                    }
+
+                    // lneg
+                    case 0x75: {
+                        frame.operandStack.push(-frame.operandStack.pop());
+                        break;
+                    }
+
+                    // fneg
+                    case 0x76: {
+                        frame.operandStack.push(-frame.operandStack.pop());
+                        break;
+                    }
+
+                    // dneg
+                    case 0x77: {
+                        frame.operandStack.push(-frame.operandStack.pop());
+                        break;
+                    }
+
+                    // ishl
+                    case 0x78: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 << value2);
+                        break;
+                    }
+
+                    // lshl
+                    case 0x79: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 << value2);
+                        break;
+                    }
+
+                    // ishr
+                    case 0x7a: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 >> value2);
+                        break;
+                    }
+
+                    // lshr
+                    case 0x7b: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 >> value2);
+                        break;
+                    }
+
+                    // iushr
+                    case 0x7c: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 >> value2);
+                        break;
+                    }
+
+                    // lushr
+                    case 0x7d: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 >> value2);
+                        break;
+                    }
+
+                    // iand
+                    case 0x7e: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 & value2);
+                        break;
+                    }
+
+                    // land
+                    case 0x7f: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 & value2);
+                        break;
+                    }
+
+                    // ior
+                    case 0x80: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 | value2);
+                        break;
+                    }
+
+                    // lor
+                    case 0x81: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 | value2);
+                        break;
+                    }
+
+                    // ixor
+                    case 0x82: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 ^ value2);
+                        break;
+                    }
+
+                    // lxor
+                    case 0x83: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        frame.operandStack.push(value1 ^ value2);
+                        break;
+                    }
+
+                    // iinc
+                    case 0x84: {
+                        const index = code.getUint8();
+                        const vConst = code.getInt8();
+                        frame.locals[index].setValue(frame.locals[index].getValue() + vConst);
+                        break;
+                    }
+
+                    // i2l~i2s
+                    // TypeScript has only number type so these operation don't have any effects.
+                    case 0x85:
+                    case 0x86:
+                    case 0x87:
+                    case 0x88:
+                    case 0x89:
+                    case 0x8a:
+                    case 0x8b:
+                    case 0x8c:
+                    case 0x8d:
+                    case 0x8e:
+                    case 0x8f:
+                    case 0x90:
+                    case 0x91:
+                    case 0x92:
+                    case 0x93:
+                        break;
+
+                    // lcmp
+                    case 0x94: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value2 < value1) frame.operandStack.push(1);
+                        else if (value2 == value1) frame.operandStack.push(0);
+                        else frame.operandStack.push(-1);
+                        break;
+                    }
+
+                    // fcmpl
+                    case 0x95: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (isNaN(value1) || isNaN(value2)) frame.operandStack.push(-1);
+                        else if (value2 < value1) frame.operandStack.push(1);
+                        else if (value2 == value1) frame.operandStack.push(0);
+                        else frame.operandStack.push(-1);
+                        break;
+                    }
+
+                    // fcmpg
+                    case 0x96: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (isNaN(value1) || isNaN(value2)) frame.operandStack.push(-1);
+                        else if (value2 < value1) frame.operandStack.push(1);
+                        else if (value2 == value1) frame.operandStack.push(0);
+                        else frame.operandStack.push(1);
+                        break;
+                    }
+
+                    // dcmpl
+                    case 0x97: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (isNaN(value1) || isNaN(value2)) frame.operandStack.push(-1);
+                        else if (value2 < value1) frame.operandStack.push(1);
+                        else if (value2 == value1) frame.operandStack.push(0);
+                        else frame.operandStack.push(-1);
+                        break;
+                    }
+
+                    // dcmpg
+                    case 0x98: {
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (isNaN(value1) || isNaN(value2)) frame.operandStack.push(-1);
+                        else if (value2 < value1) frame.operandStack.push(1);
+                        else if (value2 == value1) frame.operandStack.push(0);
+                        else frame.operandStack.push(1);
+                        break;
+                    }
+
+                    // ifeq
+                    case 0x99: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        if (frame.operandStack.pop() === 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // ifne
+                    case 0x9a: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        if (frame.operandStack.pop() !== 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // iflt
+                    case 0x9b: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        if (frame.operandStack.pop() < 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // ifge
+                    case 0x9c: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        if (frame.operandStack.pop() >= 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // ifgt
+                    case 0x9d: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        if (frame.operandStack.pop() > 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // ifle
+                    case 0x9e: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        if (frame.operandStack.pop() <= 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // if_icmpeq
+                    case 0x9f: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value1 === value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // if_icmpne
+                    case 0xa0: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value1 !== value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // if_icmplt
+                    case 0xa1: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value1 < value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // if_icmpge
+                    case 0xa2: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value1 >= value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // if_icmpgt
+                    case 0xa3: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value1 > value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // if_icmple
+                    case 0xa4: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        const value2 = frame.operandStack.pop();
+                        const value1 = frame.operandStack.pop();
+                        if (value1 <= value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
+                    // goto
+                    case 0xa7: {
+                        const branchByte1 = code.getUint8();
+                        const branchByte2 = code.getUint8();
+                        nextOffset = (branchByte1 << 8) | branchByte2;
+                        break;
+                    }
+
                     // return
                     case 0xb1: {
                         return;
@@ -643,6 +1095,9 @@ export class JVM {
                         break;
                     }
                 }
+
+                if (code.offset !== nextOffset) code.offset = nextOffset;
+
                 opcode = code.getUint8()
             }
         }
@@ -766,7 +1221,6 @@ export class JVM {
 
         const fieldsCount = this.buffer.getUint16();
 
-        // TODO Hello, Worldでは必要ない
         const fields: FieldInfo[] = [];
         for (let i = 0; i < fieldsCount; i++) {
             const accessFlags = this.buffer.getUint16();
