@@ -81,13 +81,15 @@ export class JVM {
             code.resetOffset();
 
             const argsCount = readUtf8FromConstantPool(constantPool, method.descriptorIndex).split(";").length - 1;
-            const frame = new Frame(codeAttribute.maxLocals - argsCount, constantPool);
+            const frame = new Frame(method, codeAttribute.maxLocals - argsCount, constantPool);
             frame.locals.push(new ArrayVariable([]));
+            frame.loadOpcodes();
+            frame.execute();
 
+            /*
             let opcode = code.getUint8();
             while (code.offset < code.getLength()) {
                 switch (opcode) {
-
                     // nop
                     case 0x00: {
                         break;
@@ -100,7 +102,7 @@ export class JVM {
                         const constantPoolInfo = getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2);
 
                         if (!constantPoolInfo || !isConstantFieldRefInfo(constantPoolInfo.info)) {
-                            this.throwErrorOrException(new NoSuchFieldError());
+                            throwErrorOrException(new NoSuchFieldError());
                             return;
                         }
 
@@ -457,7 +459,7 @@ export class JVM {
                         }
                         break;
                     }
-                    
+
                     // istore_0
                     case 0x3b: {
                         if (frame.locals.length - 1 < 0) {
@@ -1152,6 +1154,7 @@ export class JVM {
 
                 opcode = code.getUint8()
             }
+            */
         }
     }
 
@@ -1347,10 +1350,6 @@ export class JVM {
         }
     }
 
-    private throwErrorOrException(throwable: Throwable) {
-        throwable.printStackTrace()
-    }
-
     private getClassName(packageName: string): string {
         const split = packageName.split("/");
         return split[split.length - 1];
@@ -1360,4 +1359,8 @@ export class JVM {
 
 export const getConstantPoolInfo = (constantPool: ConstantPoolInfo[], index: number): ConstantPoolInfo => {
     return constantPool.filter(constant => constant.id === index)[0];
+}
+
+export const throwErrorOrException = (throwable: Throwable) => {
+    throwable.printStackTrace()
 }
