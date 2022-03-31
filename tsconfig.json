@@ -3,6 +3,6 @@
     "sourceMap": true,
     "target": "ES5",
     "module": "ES2020",
-    "lib": ["ES2017", "dom"]
+    "lib": ["ES2020", "dom"]
   }
 }

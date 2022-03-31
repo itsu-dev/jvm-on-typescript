@@ -20,6 +20,38 @@ export var isConstantFieldRefInfo = function (arg) {
         typeof arg.classIndex === "number" &&
         typeof arg.nameAndTypeIndex === "number";
 };
+export var isConstantStringInfo = function (arg) {
+    return typeof arg === "object" &&
+        arg !== null &&
+        typeof arg.tag === "number" &&
+        typeof arg.stringIndex === "number";
+};
+export var isConstantIntegerInfo = function (arg) {
+    return typeof arg === "object" &&
+        arg !== null &&
+        typeof arg.tag === "number" &&
+        typeof arg.bytes === "number";
+};
+export var isConstantFloatInfo = function (arg) {
+    return typeof arg === "object" &&
+        arg !== null &&
+        typeof arg.tag === "number" &&
+        typeof arg.bytes === "number";
+};
+export var isConstantLongInfo = function (arg) {
+    return typeof arg === "object" &&
+        arg !== null &&
+        typeof arg.tag === "number" &&
+        typeof arg.highBytes === "number" &&
+        typeof arg.lowBytes === "number";
+};
+export var isConstantDoubleInfo = function (arg) {
+    return typeof arg === "object" &&
+        arg !== null &&
+        typeof arg.tag === "number" &&
+        typeof arg.highBytes === "number" &&
+        typeof arg.lowBytes === "number";
+};
 export var readUtf8FromConstantPool = function (constantPool, index) {
     return new TextDecoder("utf-8").decode(getConstantPoolInfo(constantPool, index).info.bytes.view);
 };

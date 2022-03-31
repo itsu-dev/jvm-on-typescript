@@ -13,9 +13,24 @@ import {
     CONSTANT_METHOD_TYPE,
     CONSTANT_NAME_AND_TYPE,
     CONSTANT_STRING,
-    CONSTANT_UTF8, ConstantClassInfo, ConstantMethodRefInfo, ConstantNameAndTypeInfo,
-    ConstantPoolInfo, ConstantStringInfo,
-    isConstantFieldRefInfo, readUtf8FromConstantPool
+    CONSTANT_UTF8,
+    ConstantClassInfo,
+    ConstantDoubleInfo,
+    ConstantFieldRefInfo,
+    ConstantFloatInfo,
+    ConstantIntegerInfo, ConstantInvokeDynamicInfo,
+    ConstantLongInfo, ConstantMethodHandleInfo,
+    ConstantMethodRefInfo, ConstantMethodTypeInfo,
+    ConstantNameAndTypeInfo,
+    ConstantPoolInfo,
+    ConstantStringInfo, ConstantUtf8Info,
+    isConstantDoubleInfo,
+    isConstantFieldRefInfo,
+    isConstantFloatInfo,
+    isConstantIntegerInfo,
+    isConstantLongInfo,
+    isConstantStringInfo,
+    readUtf8FromConstantPool
 } from "./models/info/ConstantPoolInfo.js";
 import {
     Attribute,
@@ -71,7 +86,6 @@ export class JVM {
 
             let opcode = code.getUint8();
             while (code.offset < code.getLength()) {
-                let nextOffset = code.offset;
                 switch (opcode) {
 
                     // nop
@@ -83,7 +97,7 @@ export class JVM {
                     case 0xb2: {
                         const indexByte1 = code.getUint8();
                         const indexByte2 = code.getUint8();
-                        const constantPoolInfo = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2);
+                        const constantPoolInfo = getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2);
 
                         if (!constantPoolInfo || !isConstantFieldRefInfo(constantPoolInfo.info)) {
                             this.throwErrorOrException(new NoSuchFieldError());
@@ -91,8 +105,8 @@ export class JVM {
                         }
 
                         const fieldRef = constantPoolInfo.info;
-                        const classRef = this.getConstantPoolInfo(constantPool, fieldRef.classIndex).info as ConstantClassInfo
-                        const fieldNameAndTypeRef = this.getConstantPoolInfo(constantPool, fieldRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo
+                        const classRef = getConstantPoolInfo(constantPool, fieldRef.classIndex).info as ConstantClassInfo
+                        const fieldNameAndTypeRef = getConstantPoolInfo(constantPool, fieldRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo
                         const module = await import("./lib/" + readUtf8FromConstantPool(constantPool, classRef.nameIndex) + ".js")
                         const fieldClassFileName = readUtf8FromConstantPool(constantPool, fieldNameAndTypeRef.nameIndex);
 
@@ -107,8 +121,48 @@ export class JVM {
                     // ldc
                     case 0x12: {
                         const index = code.getUint8();
-                        const stringRef = this.getConstantPoolInfo(constantPool, index).info as ConstantStringInfo;
-                        frame.operandStack.push(readUtf8FromConstantPool(constantPool, stringRef.stringIndex));
+                        const info = getConstantPoolInfo(constantPool, index).info;
+
+                        if (info.tag === CONSTANT_STRING) {
+                            frame.operandStack.push(readUtf8FromConstantPool(constantPool, (info as ConstantStringInfo).stringIndex));
+
+                        } else if (info.tag === CONSTANT_INTEGER) {
+                            const dataView = new ByteBuffer(new ArrayBuffer(32));
+                            dataView.setInt32((info as ConstantIntegerInfo).bytes);
+                            dataView.resetOffset();
+                            frame.operandStack.push(dataView.getInt8());
+
+                        } else if (info.tag === CONSTANT_FLOAT) {
+                            const dataView = new ByteBuffer(new ArrayBuffer(32));
+                            dataView.setUint32((info as ConstantFloatInfo).bytes);
+                            dataView.resetOffset();
+                            frame.operandStack.push(dataView.getFloat32());
+
+                        }
+                        break;
+                    }
+
+                    // ldc2_w
+                    case 0x14: {
+                        const indexByte1 = code.getUint8();
+                        const indexByte2 = code.getUint8();
+                        const info = getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info;
+
+                        if (info.tag === CONSTANT_LONG) {
+                            const dataView = new ByteBuffer(new ArrayBuffer(64));
+                            dataView.setUint32((info as ConstantLongInfo).highBytes);
+                            dataView.setUint32((info as ConstantLongInfo).lowBytes);
+                            dataView.resetOffset();
+                            frame.operandStack.push((dataView.getUint32() << 32) + dataView.getUint32());
+
+                        } else if (info.tag === CONSTANT_DOUBLE) {
+                            const dataView = new ByteBuffer(new ArrayBuffer(64));
+                            dataView.setUint32((info as ConstantDoubleInfo).highBytes);
+                            dataView.setUint32((info as ConstantDoubleInfo).lowBytes);
+                            dataView.resetOffset();
+                            frame.operandStack.push(dataView.getFloat64());
+
+                        }
                         break;
                     }
 
@@ -116,7 +170,7 @@ export class JVM {
                     case 0xb6: {
                         const indexByte1 = code.getUint8();
                         const indexByte2 = code.getUint8();
-                        const methodRef = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
+                        const methodRef = getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
                         const methodNameAndTypeRef = getConstantPoolInfo(constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
                         const invokeMethodName = readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.nameIndex);
                         const descriptor = readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.descriptorIndex).split(")")
@@ -946,7 +1000,7 @@ export class JVM {
                     case 0x99: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        if (frame.operandStack.pop() === 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (frame.operandStack.pop() === 0) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -954,7 +1008,7 @@ export class JVM {
                     case 0x9a: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        if (frame.operandStack.pop() !== 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (frame.operandStack.pop() !== 0) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -962,7 +1016,7 @@ export class JVM {
                     case 0x9b: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        if (frame.operandStack.pop() < 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (frame.operandStack.pop() < 0) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -970,7 +1024,7 @@ export class JVM {
                     case 0x9c: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        if (frame.operandStack.pop() >= 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (frame.operandStack.pop() >= 0) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -978,7 +1032,7 @@ export class JVM {
                     case 0x9d: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        if (frame.operandStack.pop() > 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (frame.operandStack.pop() > 0) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -986,7 +1040,7 @@ export class JVM {
                     case 0x9e: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        if (frame.operandStack.pop() <= 0) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (frame.operandStack.pop() <= 0) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -996,7 +1050,7 @@ export class JVM {
                         const branchByte2 = code.getUint8();
                         const value2 = frame.operandStack.pop();
                         const value1 = frame.operandStack.pop();
-                        if (value1 === value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (value1 === value2) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1006,7 +1060,7 @@ export class JVM {
                         const branchByte2 = code.getUint8();
                         const value2 = frame.operandStack.pop();
                         const value1 = frame.operandStack.pop();
-                        if (value1 !== value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (value1 !== value2) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1016,7 +1070,7 @@ export class JVM {
                         const branchByte2 = code.getUint8();
                         const value2 = frame.operandStack.pop();
                         const value1 = frame.operandStack.pop();
-                        if (value1 < value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (value1 < value2) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1026,7 +1080,7 @@ export class JVM {
                         const branchByte2 = code.getUint8();
                         const value2 = frame.operandStack.pop();
                         const value1 = frame.operandStack.pop();
-                        if (value1 >= value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (value1 >= value2) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1036,7 +1090,7 @@ export class JVM {
                         const branchByte2 = code.getUint8();
                         const value2 = frame.operandStack.pop();
                         const value1 = frame.operandStack.pop();
-                        if (value1 > value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (value1 > value2) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1046,7 +1100,7 @@ export class JVM {
                         const branchByte2 = code.getUint8();
                         const value2 = frame.operandStack.pop();
                         const value1 = frame.operandStack.pop();
-                        if (value1 <= value2) nextOffset = (branchByte1 << 8) | branchByte2;
+                        if (value1 <= value2) code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1054,7 +1108,7 @@ export class JVM {
                     case 0xa7: {
                         const branchByte1 = code.getUint8();
                         const branchByte2 = code.getUint8();
-                        nextOffset = (branchByte1 << 8) | branchByte2;
+                        code.offset = (branchByte1 << 8) | branchByte2;
                         break;
                     }
 
@@ -1067,7 +1121,7 @@ export class JVM {
                     case 0xb7: {
                         const indexByte1 = code.getUint8();
                         const indexByte2 = code.getUint8();
-                        const methodRef = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
+                        const methodRef = getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
                         const methodNameAndTypeRef = getConstantPoolInfo(constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
                         const argumentsCount = readUtf8FromConstantPool(constantPool, methodNameAndTypeRef.descriptorIndex).split(";").length - 1;
                         const methodArgs = [];
@@ -1085,7 +1139,7 @@ export class JVM {
                     case 0xbb: {
                         const indexByte1 = code.getUint8();
                         const indexByte2 = code.getUint8();
-                        const classRef = this.getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantClassInfo;
+                        const classRef = getConstantPoolInfo(constantPool, (indexByte1 << 8) | indexByte2).info as ConstantClassInfo;
                         const module = await import("./lib/" + readUtf8FromConstantPool(constantPool, classRef.nameIndex) + ".js")
 
                         frame.operandStack.push({
@@ -1095,8 +1149,6 @@ export class JVM {
                         break;
                     }
                 }
-
-                if (code.offset !== nextOffset) code.offset = nextOffset;
 
                 opcode = code.getUint8()
             }
@@ -1112,11 +1164,11 @@ export class JVM {
         const constantPool: ConstantPoolInfo[] = [];
         for (let i = 1; i < constantPoolCount; i++) {
             const tag = this.buffer.getUint8();
-            let info: Constant = [];
+            let info: Constant;
 
             switch (tag) {
                 case CONSTANT_CLASS:
-                    info = {
+                    (info as ConstantClassInfo) = {
                         tag: tag,
                         nameIndex: this.buffer.getUint16()
                     }
@@ -1125,7 +1177,7 @@ export class JVM {
                 case CONSTANT_FIELD_REF:
                 case CONSTANT_METHOD_REF:
                 case CONSTANT_INTERFACE_METHOD_REF:
-                    info = {
+                    (info as ConstantFieldRefInfo | ConstantMethodRefInfo) = {
                         tag: tag,
                         classIndex: this.buffer.getUint16(),
                         nameAndTypeIndex: this.buffer.getUint16()
@@ -1133,31 +1185,45 @@ export class JVM {
                     break;
 
                 case CONSTANT_STRING:
-                    info = {
+                    (info as ConstantStringInfo) = {
                         tag: tag,
                         stringIndex: this.buffer.getUint16()
                     }
                     break;
 
                 case CONSTANT_INTEGER:
+                    (info as ConstantIntegerInfo) = {
+                        tag: tag,
+                        bytes: this.buffer.getInt32()
+                    }
+                    break;
+
                 case CONSTANT_FLOAT:
-                    info = {
+                    (info as ConstantFloatInfo) = {
                         tag: tag,
                         bytes: this.buffer.getUint32()
                     }
                     break;
 
                 case CONSTANT_LONG:
-                case CONSTANT_DOUBLE:
-                    info = {
+                    (info as ConstantLongInfo) = {
                         tag: tag,
                         highBytes: this.buffer.getUint32(),
-                        lowBytes: this.buffer.getUint32(),
+                        lowBytes: this.buffer.getUint32()
                     }
                     break;
 
+                case CONSTANT_DOUBLE:
+                    (info as ConstantDoubleInfo) = {
+                        tag: tag,
+                        highBytes: this.buffer.getUint32(),
+                        lowBytes: this.buffer.getUint32()
+                    }
+                    console.log(info)
+                    break;
+
                 case CONSTANT_NAME_AND_TYPE:
-                    info = {
+                    (info as ConstantNameAndTypeInfo) = {
                         tag: tag,
                         nameIndex: this.buffer.getUint16(),
                         descriptorIndex: this.buffer.getUint16()
@@ -1172,7 +1238,7 @@ export class JVM {
                         utf8Buffer.setUint8(this.buffer.getUint8());
                     }
 
-                    info = {
+                    (info as ConstantUtf8Info) = {
                         tag: tag,
                         length: length,
                         bytes: utf8Buffer
@@ -1180,7 +1246,7 @@ export class JVM {
                     break;
 
                 case CONSTANT_METHOD_HANDLE:
-                    info = {
+                    (info as ConstantMethodHandleInfo) = {
                         tag: tag,
                         referenceKind: this.buffer.getUint8(),
                         referenceIndex: this.buffer.getUint16()
@@ -1188,14 +1254,14 @@ export class JVM {
                     break;
 
                 case CONSTANT_METHOD_TYPE:
-                    info = {
+                    (info as ConstantMethodTypeInfo) = {
                         tag: tag,
                         descriptorIndex: this.buffer.getUint16()
                     }
                     break;
 
                 case CONSTANT_INVOKE_DYNAMIC:
-                    info = {
+                    (info as ConstantInvokeDynamicInfo) = {
                         tag: tag,
                         bootstrapMethodAttrIndex: this.buffer.getUint16(),
                         nameAndTypeIndex: this.buffer.getUint16()
@@ -1205,8 +1271,11 @@ export class JVM {
 
             constantPool.push({
                 tag: tag,
+                id: i,
                 info: info
             })
+
+            if (tag === CONSTANT_LONG || tag === CONSTANT_DOUBLE) i += 1;
         }
 
         const accessFlags = this.buffer.getUint16();
@@ -1282,10 +1351,6 @@ export class JVM {
         throwable.printStackTrace()
     }
 
-    private getConstantPoolInfo(constantPool: ConstantPoolInfo[], index: number): ConstantPoolInfo {
-        return constantPool[index - 1]
-    }
-
     private getClassName(packageName: string): string {
         const split = packageName.split("/");
         return split[split.length - 1];
@@ -1294,5 +1359,5 @@ export class JVM {
 }
 
 export const getConstantPoolInfo = (constantPool: ConstantPoolInfo[], index: number): ConstantPoolInfo => {
-    return constantPool[index - 1]
+    return constantPool.filter(constant => constant.id === index)[0];
 }
