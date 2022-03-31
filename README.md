@@ -16,9 +16,17 @@ jvm.load();  // Load class file and invoke main method.
 ```
 
 ## Functions
+- Some of primitive/reference types
+    - int/long/float/double values, variables
+        - addition/subtraction/multiply/division/shl/shr
+        - String type
+        - sum of String (by StringBuilder)
+    - String
 - Print "Hello, World!"
-- sum of int, String (E.g. "A" + "B", 1 + 2)
+    - System.out.println("Hello, World!");
 - Fizz Buzz problem
+    - If statement
+    - For statement
 
 ### Implemented Opcodes
 |Mnemonic|Opcode|isImplemented|
