@@ -20,8 +20,8 @@ jvm.load();  // Load class file and invoke main method.
     - int/long/float/double values, variables
         - addition/subtraction/multiply/division/shl/shr
         - String type
-        - sum of String (by StringBuilder)
     - String
+        - sum of String (by StringBuilder)
 - Print "Hello, World!"
     - System.out.println("Hello, World!");
 - Fizz Buzz problem
