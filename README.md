@@ -203,7 +203,7 @@ jvm.load();  // Load class file and invoke main method.
 |ret|0xa9||
 |tableswitch|0xaa||
 |lookupswitch|0xab||
-|ireturn|0xac||
+|ireturn|0xac|✓|
 |lreturn|0xad||
 |freturn|0xae||
 |dreturn|0xaf||
@@ -215,7 +215,7 @@ jvm.load();  // Load class file and invoke main method.
 |putfield|0xb5||
 |invokevirtual|0xb6|✓|
 |invokespecial|0xb7|✓|
-|invokestatic|0xb8||
+|invokestatic|0xb8|✓|
 |invokeinterface|0xb9||
 |invokedynamic|0xba||
 |new|0xbb|✓|
