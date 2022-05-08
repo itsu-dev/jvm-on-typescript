@@ -22,7 +22,9 @@ import {MethodInfo} from "./info/MethodInfo.js";
 import {NoSuchFieldError} from "../lib/java/lang/NoSuchFieldError.js";
 import {ByteBuffer} from "../utils/ByteBuffer.js";
 import {System} from "../lib/java/lang/System.js";
-import {getConstantPoolInfo, throwErrorOrException} from "../jvm.js";
+import {getArgumentsAndReturnType, getConstantPoolInfo, throwErrorOrException} from "../jvm.js";
+import Thread from "./Thread.js";
+import {ClassFile} from "./ClassFile.js";
 
 export type Opcode = {
     id: number,
@@ -32,17 +34,22 @@ export type Opcode = {
 
 export class Frame {
 
+    thread: Thread
     method: MethodInfo;
+    classFile: ClassFile;
     locals: Array<Variable>;
     operandStack: Array<any> = [];
     constantPool: ConstantPoolInfo[];
     opcodes = new Array<Opcode>();
     isRunning = true;
 
-    constructor(method: MethodInfo, localSize: number, constantPool: ConstantPoolInfo[]) {
+    constructor(thread: Thread, method: MethodInfo, classFile: ClassFile, localSize: number, constantPool: ConstantPoolInfo[], args: Array<any>) {
+        this.thread = thread;
         this.method = method;
+        this.classFile = classFile;
         this.locals = new Array(localSize);
         this.constantPool = constantPool;
+        args.forEach(arg => this.locals.push(new IntVariable(arg)));
     }
 
     execute() {
@@ -149,17 +156,17 @@ export class Frame {
                         const indexByte2 = opcode.operands[1];
                         const methodRef = getConstantPoolInfo(this.constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
                         const methodNameAndTypeRef = getConstantPoolInfo(this.constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
+                        const clazz = getConstantPoolInfo(this.constantPool, methodRef.classIndex).info as ConstantClassInfo;
+                        const className = readUtf8FromConstantPool(this.constantPool, clazz.nameIndex);
                         const invokeMethodName = readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.nameIndex);
-                        const descriptor = readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex).split(")")
-                        const argumentText = descriptor[0].replace("(", "");
-                        const argumentsCount = argumentText.includes(";") ? argumentText.split(";").length - 1 : (argumentText === "" ? 0 : argumentText.split(";").length)
+                        const argumentsAndReturnType = getArgumentsAndReturnType(readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex));
                         const methodArgs = [];
 
-                        for (let i = 0; i < argumentsCount; i++) {
+                        for (let i = 0; i < argumentsAndReturnType[0].length; i++) {
                             methodArgs.push(this.operandStack.pop());
                         }
 
-                        if (descriptor[descriptor.length - 1] !== "V") {
+                        if (argumentsAndReturnType[1] !== "V") {
                             const result = this.operandStack.pop()["callable"][invokeMethodName](...methodArgs);
                             if (typeof result === "object") {
                                 this.operandStack.push({
@@ -1094,6 +1101,13 @@ export class Frame {
                         break;
                     }
 
+                    // ireturn
+                    case 0xac: {
+                        console.log( this.thread.stack)
+                        this.thread.stack[this.thread.pc - 2].operandStack.push(this.operandStack.pop());
+                        break;
+                    }
+
                     // return
                     case 0xb1: {
                         this.isRunning = false
@@ -1106,7 +1120,8 @@ export class Frame {
                         const indexByte2 = opcode.operands[1];
                         const methodRef = getConstantPoolInfo(this.constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
                         const methodNameAndTypeRef = getConstantPoolInfo(this.constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
-                        const argumentsCount = readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex).split(";").length - 1;
+                        const argumentsAndReturnType = this.getArgumentsAndReturnType(readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex));
+                        const argumentsCount = argumentsAndReturnType[0].length;
                         const methodArgs = [];
 
                         for (let i = 0; i < argumentsCount; i++) {
@@ -1118,12 +1133,43 @@ export class Frame {
                         break;
                     }
 
+                    // invokestatic
+                    case 0xb8: {
+                        const indexByte1 = opcode.operands[0];
+                        const indexByte2 = opcode.operands[1];
+                        const methodRef = getConstantPoolInfo(this.constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
+                        const methodNameAndTypeRef = getConstantPoolInfo(this.constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
+                        const clazz = getConstantPoolInfo(this.constantPool, methodRef.classIndex).info as ConstantClassInfo;
+                        const className = readUtf8FromConstantPool(this.constantPool, clazz.nameIndex);
+                        const invokeMethodName = readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.nameIndex);
+                        const argumentsAndReturnType = getArgumentsAndReturnType(readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex));
+                        const argumentsCount = argumentsAndReturnType[0].length;
+                        const methodArgs = [];
+
+                        for (let i = 0; i < argumentsCount; i++) {
+                            methodArgs.push(this.operandStack.pop());
+                        }
+
+                        this.thread.invokeMethod(invokeMethodName, this.constantPool, this.classFile, methodArgs);
+
+                        // this.operandStack.pop()["callable"]["constructor"](...methodArgs)
+
+                        break;
+                    }
+
                     // new
                     case 0xbb: {
                         const indexByte1 = opcode.operands[0];
                         const indexByte2 = opcode.operands[1];
                         const classRef = getConstantPoolInfo(this.constantPool, (indexByte1 << 8) | indexByte2).info as ConstantClassInfo;
-                        const module = await import("../lib/" + readUtf8FromConstantPool(this.constantPool, classRef.nameIndex) + ".js")
+                        const className = readUtf8FromConstantPool(this.constantPool, classRef.nameIndex);
+                        let module: any
+
+                        try {
+                            module = await import("../lib/" + className + ".js")
+                        } catch (e) {
+                            // this.thread.invokeMethod(className, this.constantPool, this.classFile, []);
+                        }
 
                         this.operandStack.push({
                             "callable": new module[this.getClassName(readUtf8FromConstantPool(this.constantPool, classRef.nameIndex))]()
@@ -1133,6 +1179,10 @@ export class Frame {
                     }
                 }
             }
+    }
+
+    private getArgumentsAndReturnType(s: string) {
+        
     }
 
     loadOpcodes() {
@@ -2382,6 +2432,16 @@ export class Frame {
                     break;
                 }
 
+                // ireturn
+                case 0xac: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
                 // return
                 case 0xb1: {
                     this.opcodes.push({
@@ -2394,6 +2454,17 @@ export class Frame {
 
                 // invokespecial
                 case 0xb7: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: [code.getUint8(), code.getUint8()]
+                    });
+                    id += 2;
+                    break;
+                }
+
+                // invokestatic
+                case 0xb8: {
                     this.opcodes.push({
                         id: id,
                         opcode: opcode,
