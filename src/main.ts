@@ -9,7 +9,10 @@ window.onload = () => {
     }
 
     reader.onload = () => {
-        const jvm = new JVM(reader.result as ArrayBuffer);
+        const jvmArgs = {
+            Xss: 1000
+        }
+        const jvm = new JVM(reader.result as ArrayBuffer, jvmArgs, []);
         jvm.load();
     }
 }

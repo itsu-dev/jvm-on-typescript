@@ -15,16 +15,16 @@ import {
     ConstantStringInfo,
     isConstantFieldRefInfo,
     readUtf8FromConstantPool
-} from "./info/ConstantPoolInfo.js";
-import {DoubleVariable, FloatVariable, IntVariable, LongVariable, Variable} from "./Variable.js";
-import {CodeAttribute} from "./info/AttributeInfo.js";
-import {MethodInfo} from "./info/MethodInfo.js";
-import {NoSuchFieldError} from "../lib/java/lang/NoSuchFieldError.js";
-import {ByteBuffer} from "../utils/ByteBuffer.js";
-import {System} from "../lib/java/lang/System.js";
-import {getArgumentsAndReturnType, getConstantPoolInfo, throwErrorOrException} from "../jvm.js";
+} from "../../../models/info/ConstantPoolInfo.js";
+import {DoubleVariable, FloatVariable, IntVariable, LongVariable, Variable} from "../../../models/Variable.js";
+import {CodeAttribute} from "../../../models/info/AttributeInfo.js";
+import {MethodInfo} from "../../../models/info/MethodInfo.js";
+import {NoSuchFieldError} from "../../../lib/java/lang/NoSuchFieldError.js";
+import {ByteBuffer} from "../../../utils/ByteBuffer.js";
+import {System} from "../../../lib/java/lang/System.js";
+import {getArgumentsAndReturnType, getConstantPoolInfo, throwErrorOrException} from "../../../jvm.js";
 import Thread from "./Thread.js";
-import {ClassFile} from "./ClassFile.js";
+import {ClassFile} from "../../cfl/ClassFile.js";
 
 export type Opcode = {
     id: number,
@@ -1103,8 +1103,7 @@ export class Frame {
 
                     // ireturn
                     case 0xac: {
-                        console.log( this.thread.stack)
-                        this.thread.stack[this.thread.pc - 2].operandStack.push(this.operandStack.pop());
+                        this.thread.stack[this.thread.runtimeDataArea.getPCRegister(this.thread.id) - 2].operandStack.push(this.operandStack.pop());
                         break;
                     }
 
@@ -1150,7 +1149,7 @@ export class Frame {
                             methodArgs.push(this.operandStack.pop());
                         }
 
-                        this.thread.invokeMethod(invokeMethodName, this.constantPool, this.classFile, methodArgs);
+                        this.thread.invokeMethod(invokeMethodName, this.classFile, methodArgs);
 
                         // this.operandStack.pop()["callable"]["constructor"](...methodArgs)
 

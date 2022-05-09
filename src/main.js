@@ -6,7 +6,10 @@ window.onload = function () {
         reader.readAsArrayBuffer(fileInput.files[0]);
     };
     reader.onload = function () {
-        var jvm = new JVM(reader.result);
+        var jvmArgs = {
+            Xss: 1000
+        };
+        var jvm = new JVM(reader.result, jvmArgs, []);
         jvm.load();
     };
 };

@@ -1,7 +1,7 @@
-import {ConstantPoolInfo} from "./info/ConstantPoolInfo.js";
-import {Attribute} from "./info/AttributeInfo.js";
-import {FieldInfo} from "./info/FieldInfo.js";
-import {MethodInfo} from "./info/MethodInfo.js";
+import {ConstantPoolInfo} from "../../models/info/ConstantPoolInfo.js";
+import {Attribute} from "../../models/info/AttributeInfo.js";
+import {FieldInfo} from "../../models/info/FieldInfo.js";
+import {MethodInfo} from "../../models/info/MethodInfo.js";
 
 export type ClassFile = {
     magic: number,

@@ -24,38 +24,31 @@ import {
     ConstantNameAndTypeInfo,
     ConstantPoolInfo,
     ConstantStringInfo, ConstantUtf8Info,
-    isConstantDoubleInfo,
-    isConstantFieldRefInfo,
-    isConstantFloatInfo,
-    isConstantIntegerInfo,
-    isConstantLongInfo,
-    isConstantStringInfo,
-    readUtf8FromConstantPool
 } from "./models/info/ConstantPoolInfo.js";
 import {
     Attribute,
-    CodeAttribute,
     readAttributes
 } from "./models/info/AttributeInfo.js";
 import {MethodInfo} from "./models/info/MethodInfo.js";
-import {ClassFile} from "./models/ClassFile.js";
+import {ClassFile} from "./core/cfl/ClassFile.js";
 import {ByteBuffer} from "./utils/ByteBuffer.js";
 import {Throwable} from "./lib/java/lang/Throwable.js";
-import {NoSuchFieldError} from "./lib/java/lang/NoSuchFieldError.js";
 import {FieldInfo} from "./models/info/FieldInfo.js";
-import Thread from "./models/Thread.js";
-import {ArrayVariable, DoubleVariable, FloatVariable, IntVariable, LongVariable} from "./models/Variable.js";
-import {Error} from "./lib/java/lang/Error.js";
-import {System} from "./lib/java/lang/System.js";
+import Thread from "./core/rda/stack/Thread.js";
+import RuntimeDataArea from "./core/rda/RuntimeDataArea.js";
 
 export class JVM {
 
     buffer: ByteBuffer
-    mainThread: Thread
+    runtimeDataArea: RuntimeDataArea;
+    jvmArgs: {}
+    args: []
 
-    constructor(array: ArrayBuffer) {
+    constructor(array: ArrayBuffer, jvmArgs: {}, args: []) {
         this.buffer = new ByteBuffer(array);
-        this.mainThread = new Thread(1000);
+        this.jvmArgs = jvmArgs;
+        this.args = args;
+        this.runtimeDataArea = new RuntimeDataArea();
     }
 
     load() {
@@ -67,7 +60,9 @@ export class JVM {
         const classFile = this.loadClassFile();
         console.log(classFile)
 
-        this.mainThread.invokeMethod("main", classFile.constantPool, classFile, []);
+        this.runtimeDataArea
+            .createThread(this.jvmArgs["Xss"])
+            .then(thread => thread.invokeMethod("main", classFile, this.args));
     }
 
     private loadClassFile(): ClassFile {
