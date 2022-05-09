@@ -92,9 +92,9 @@ export class DoubleVariable implements Variable {
 
 }
 
-export class StringVariable implements Variable {
+export class AnyVariable implements Variable {
 
-    value: string;
+    value: any;
 
     constructor(value: string) {
         this.value = value;

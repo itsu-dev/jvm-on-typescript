@@ -16,7 +16,14 @@ import {
     isConstantFieldRefInfo,
     readUtf8FromConstantPool
 } from "../../../models/info/ConstantPoolInfo.js";
-import {DoubleVariable, FloatVariable, IntVariable, LongVariable, Variable} from "../../../models/Variable.js";
+import {
+    AnyVariable,
+    DoubleVariable,
+    FloatVariable,
+    IntVariable,
+    LongVariable,
+    Variable
+} from "../../../models/Variable.js";
 import {CodeAttribute} from "../../../models/info/AttributeInfo.js";
 import {MethodInfo} from "../../../models/info/MethodInfo.js";
 import {NoSuchFieldError} from "../../../lib/java/lang/NoSuchFieldError.js";
@@ -303,6 +310,13 @@ export class Frame {
                         break;
                     }
 
+                    // aload
+                    case 0x19: {
+                        const index = opcode.operands[0];
+                        this.operandStack.push(this.locals[index].getValue());
+                        break;
+                    }
+
                     // iload_0
                     case 0x1a: {
                         this.operandStack.push(this.locals[0].getValue());
@@ -399,6 +413,30 @@ export class Frame {
                         break;
                     }
 
+                    // aload_0
+                    case 0x2a: {
+                        this.operandStack.push(this.locals[0].getValue());
+                        break;
+                    }
+
+                    // aload_1
+                    case 0x2b: {
+                        this.operandStack.push(this.locals[1].getValue());
+                        break;
+                    }
+
+                    // aload_2
+                    case 0x2c: {
+                        this.operandStack.push(this.locals[2].getValue());
+                        break;
+                    }
+
+                    // aload_3
+                    case 0x2d: {
+                        this.operandStack.push(this.locals[3].getValue());
+                        break;
+                    }
+
                     // istore
                     case 0x36: {
                         const index = opcode.operands[0];
@@ -439,6 +477,17 @@ export class Frame {
                             this.locals.push(new DoubleVariable(this.operandStack.pop()));
                         } else {
                             this.locals.splice(index, 0, new DoubleVariable(this.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // astore
+                    case 0x3a: {
+                        const index = opcode.operands[0];
+                        if (this.locals.length - 1 < index) {
+                            this.locals.push(new AnyVariable(this.operandStack.pop()));
+                        } else {
+                            this.locals.splice(index, 0, new AnyVariable(this.operandStack.pop()));
                         }
                         break;
                     }
@@ -599,6 +648,46 @@ export class Frame {
                             this.locals.push(new DoubleVariable(this.operandStack.pop()));
                         } else {
                             this.locals.splice(3, 0, new DoubleVariable(this.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // astore_0
+                    case 0x4b: {
+                        if (this.locals.length - 1 < 0) {
+                            this.locals.push(new AnyVariable(this.operandStack.pop()));
+                        } else {
+                            this.locals.splice(0, 0, new AnyVariable(this.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // astore_1
+                    case 0x4c: {
+                        if (this.locals.length - 1 < 1) {
+                            this.locals.push(new AnyVariable(this.operandStack.pop()));
+                        } else {
+                            this.locals.splice(1, 0, new AnyVariable(this.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // astore_2
+                    case 0x4d: {
+                        if (this.locals.length - 1 < 2) {
+                            this.locals.push(new AnyVariable(this.operandStack.pop()));
+                        } else {
+                            this.locals.splice(2, 0, new AnyVariable(this.operandStack.pop()));
+                        }
+                        break;
+                    }
+
+                    // astore_3
+                    case 0x4e: {
+                        if (this.locals.length - 1 < 3) {
+                            this.locals.push(new AnyVariable(this.operandStack.pop()));
+                        } else {
+                            this.locals.splice(3, 0, new AnyVariable(this.operandStack.pop()));
                         }
                         break;
                     }
@@ -1177,6 +1266,33 @@ export class Frame {
 
                         break;
                     }
+
+                    // checkcast
+                    case 0xc6: {
+                        const branchByte1 = opcode.operands[0];
+                        const branchByte2 = opcode.operands[1];
+                        const ref = getConstantPoolInfo(this.constantPool, (branchByte1 << 8) | branchByte2);
+                        // TODO
+                        break;
+                    }
+
+                    // ifnull
+                    case 0xc6: {
+                        const branchByte1 = opcode.operands[0];
+                        const branchByte2 = opcode.operands[1];
+                        const value = this.operandStack.pop();
+                        if (value == null) await this.executeOpcodes(opcode.id + ((branchByte1 << 8) | branchByte2));
+                        break;
+                    }
+
+                    // ifnonnull
+                    case 0xc7: {
+                        const branchByte1 = opcode.operands[0];
+                        const branchByte2 = opcode.operands[1];
+                        const value = this.operandStack.pop();
+                        if (value) await this.executeOpcodes(opcode.id + ((branchByte1 << 8) | branchByte2));
+                        break;
+                    }
                 }
             }
     }
@@ -1653,6 +1769,17 @@ export class Frame {
                     break;
                 }
 
+                // astore
+                case 0x3a: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: [code.getUint8()]
+                    });
+                    id++;
+                    break;
+                }
+
                 // istore_0
                 case 0x3b: {
                     this.opcodes.push({
@@ -1805,6 +1932,46 @@ export class Frame {
 
                 // dstore_3
                 case 0x4a: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // astore_0
+                case 0x4b: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // astore_1
+                case 0x4c: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // astore_2
+                case 0x4d: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // astore_3
+                case 0x4e: {
                     this.opcodes.push({
                         id: id,
                         opcode: opcode,
@@ -2476,6 +2643,39 @@ export class Frame {
 
                 // new
                 case 0xbb: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: [code.getUint8(), code.getUint8()]
+                    });
+                    id += 2;
+                    break;
+                }
+
+                // checkcast
+                case 0xc0: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: [code.getUint8(), code.getUint8()]
+                    });
+                    id += 2;
+                    break;
+                }
+
+                // ifnull
+                case 0xc6: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: [code.getUint8(), code.getUint8()]
+                    });
+                    id += 2;
+                    break;
+                }
+
+                // ifnonnull
+                case 0xc7: {
                     this.opcodes.push({
                         id: id,
                         opcode: opcode,
