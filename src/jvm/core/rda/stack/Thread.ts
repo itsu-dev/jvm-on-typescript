@@ -1,5 +1,5 @@
 import {Frame} from "./Frame.js";
-import {getArgumentsAndReturnType, throwErrorOrException} from "../../../jvm.js";
+import {throwErrorOrException} from "../../../jvm.js";
 import {ConstantPoolInfo, readUtf8FromConstantPool} from "../../../models/info/ConstantPoolInfo.js";
 import {MethodInfo} from "../../../models/info/MethodInfo.js";
 import {CodeAttribute} from "../../../models/info/AttributeInfo.js";
@@ -7,6 +7,7 @@ import {ArrayVariable} from "../../../models/Variable.js";
 import {ClassFile} from "../../cfl/ClassFile.js";
 import {System} from "../../../lib/java/lang/System.js";
 import RuntimeDataArea from "../RuntimeDataArea.js";
+import {getArgumentsAndReturnType} from "../../cfl/ClassFileLoader.js";
 
 export default class Thread {
 

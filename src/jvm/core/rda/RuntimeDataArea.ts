@@ -9,7 +9,7 @@ export default class RuntimeDataArea {
 
     createThread(stackSize: number): Promise<Thread> {
         this.stackArea[this.threadId] = new Promise<Thread>(resolve => {
-            resolve(new Thread(stackSize, this.threadId));
+            resolve(new Thread(this, stackSize, this.threadId));
         })
         this.pcRegisters[this.threadId] = 0;
         this.threadId++;

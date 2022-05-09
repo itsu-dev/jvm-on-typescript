@@ -1,4 +1,4 @@
-import { getConstantPoolInfo } from "../../jvm.js";
+import { getConstantPoolInfo } from "../../core/cfl/ClassFileLoader.js";
 export var CONSTANT_CLASS = 7;
 export var CONSTANT_FIELD_REF = 9;
 export var CONSTANT_METHOD_REF = 10;

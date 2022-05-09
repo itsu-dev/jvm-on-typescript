@@ -1,5 +1,5 @@
 import {ByteBuffer} from "../../utils/ByteBuffer.js";
-import {getConstantPoolInfo} from "../../jvm.js";
+import {getConstantPoolInfo} from "../../core/cfl/ClassFileLoader.js";
 
 export const CONSTANT_CLASS = 7;
 export const CONSTANT_FIELD_REF = 9;

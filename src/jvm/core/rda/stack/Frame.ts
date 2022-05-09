@@ -22,9 +22,10 @@ import {MethodInfo} from "../../../models/info/MethodInfo.js";
 import {NoSuchFieldError} from "../../../lib/java/lang/NoSuchFieldError.js";
 import {ByteBuffer} from "../../../utils/ByteBuffer.js";
 import {System} from "../../../lib/java/lang/System.js";
-import {getArgumentsAndReturnType, getConstantPoolInfo, throwErrorOrException} from "../../../jvm.js";
+import {throwErrorOrException} from "../../../jvm.js";
 import Thread from "./Thread.js";
 import {ClassFile} from "../../cfl/ClassFile.js";
+import {getConstantPoolInfo, getArgumentsAndReturnType} from "../../cfl/ClassFileLoader.js";
 
 export type Opcode = {
     id: number,
@@ -91,7 +92,7 @@ export class Frame {
                         const fieldRef = constantPoolInfo.info;
                         const classRef = getConstantPoolInfo(this.constantPool, fieldRef.classIndex).info as ConstantClassInfo
                         const fieldNameAndTypeRef = getConstantPoolInfo(this.constantPool, fieldRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo
-                        const module = await import("../lib/" + readUtf8FromConstantPool(this.constantPool, classRef.nameIndex) + ".js")
+                        const module = await import("../../../lib/" + readUtf8FromConstantPool(this.constantPool, classRef.nameIndex) + ".js")
                         const fieldClassFileName = readUtf8FromConstantPool(this.constantPool, fieldNameAndTypeRef.nameIndex);
 
                         this.operandStack.push({
@@ -1165,7 +1166,7 @@ export class Frame {
                         let module: any
 
                         try {
-                            module = await import("../lib/" + className + ".js")
+                            module = await import("../../../lib/" + className + ".js")
                         } catch (e) {
                             // this.thread.invokeMethod(className, this.constantPool, this.classFile, []);
                         }
