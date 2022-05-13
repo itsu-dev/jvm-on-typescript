@@ -175,17 +175,15 @@ export class Frame {
                         }
 
                         if (argumentsAndReturnType[1] !== "V") {
-                            const result = this.operandStack.pop()["callable"][invokeMethodName](...methodArgs);
+                            const result = this.operandStack.pop()[invokeMethodName](...methodArgs);
                             if (typeof result === "object") {
-                                this.operandStack.push({
-                                    "callable": result
-                                });
+                                this.operandStack.push(result);
                             } else {
                                 this.operandStack.push(result);
                             }
 
                         } else {
-                            this.operandStack.pop()["callable"][invokeMethodName](...methodArgs)
+                            this.operandStack.pop()[invokeMethodName](...methodArgs)
                         }
 
                         break;
@@ -1209,7 +1207,7 @@ export class Frame {
                         const indexByte2 = opcode.operands[1];
                         const methodRef = getConstantPoolInfo(this.constantPool, (indexByte1 << 8) | indexByte2).info as ConstantMethodRefInfo;
                         const methodNameAndTypeRef = getConstantPoolInfo(this.constantPool, methodRef.nameAndTypeIndex).info as ConstantNameAndTypeInfo;
-                        const argumentsAndReturnType = this.getArgumentsAndReturnType(readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex));
+                        const argumentsAndReturnType = getArgumentsAndReturnType(readUtf8FromConstantPool(this.constantPool, methodNameAndTypeRef.descriptorIndex));
                         const argumentsCount = argumentsAndReturnType[0].length;
                         const methodArgs = [];
 
@@ -1217,7 +1215,7 @@ export class Frame {
                             methodArgs.push(this.operandStack.pop());
                         }
 
-                        this.operandStack.pop()["callable"]["constructor"](...methodArgs)
+                        this.operandStack.push(this.operandStack.pop()["constructor"](...methodArgs));
 
                         break;
                     }
@@ -1254,15 +1252,16 @@ export class Frame {
                         const className = readUtf8FromConstantPool(this.constantPool, classRef.nameIndex);
                         let module: any
 
-                        try {
-                            module = await import("../../../lib/" + className + ".js")
-                        } catch (e) {
-                            // this.thread.invokeMethod(className, this.constantPool, this.classFile, []);
-                        }
+                        module = await import("../../../lib/" + className + ".js");
 
+                        /*
                         this.operandStack.push({
                             "callable": new module[this.getClassName(readUtf8FromConstantPool(this.constantPool, classRef.nameIndex))]()
                         });
+
+                         */
+
+                        this.operandStack.push(module.default.prototype);
 
                         break;
                     }
@@ -1295,10 +1294,6 @@ export class Frame {
                     }
                 }
             }
-    }
-
-    private getArgumentsAndReturnType(s: string) {
-        
     }
 
     loadOpcodes() {
@@ -1717,6 +1712,46 @@ export class Frame {
 
                 // dload_3
                 case 0x29: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // aload_0
+                case 0x2a: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // aload_1
+                case 0x2b: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // aload_2
+                case 0x2c: {
+                    this.opcodes.push({
+                        id: id,
+                        opcode: opcode,
+                        operands: []
+                    });
+                    break;
+                }
+
+                // aload_3
+                case 0x2d: {
                     this.opcodes.push({
                         id: id,
                         opcode: opcode,
