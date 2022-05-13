@@ -87,7 +87,6 @@ export default class ClassFileLoader {
                         highBytes: buffer.getUint32(),
                         lowBytes: buffer.getUint32()
                     }
-                    console.log(info)
                     break;
 
                 case CONSTANT_NAME_AND_TYPE:
@@ -229,6 +228,9 @@ export const getConstantPoolInfo = (constantPool: ConstantPoolInfo[], index: num
 
 export const parseDescriptor = (descriptor: string): Array<string> => {
     const temp = descriptor.match("(?<=\\()[^\\(\\)]+(?=\\))")?.[0];
+
+    if (temp == null) return [];
+
     const primitives = ["B", "C", "D", "F", "I", "J", "S", "Z"];
     const args = [];
     const STATE_NORMAL = 0;
