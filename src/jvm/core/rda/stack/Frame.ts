@@ -102,10 +102,7 @@ export class Frame {
                         const module = await import("../../../lib/" + readUtf8FromConstantPool(this.constantPool, classRef.nameIndex) + ".js")
                         const fieldClassFileName = readUtf8FromConstantPool(this.constantPool, fieldNameAndTypeRef.nameIndex);
 
-                        this.operandStack.push({
-                            "callable": module[this.getClassName(readUtf8FromConstantPool(this.constantPool, classRef.nameIndex))][fieldClassFileName],
-                            "return": readUtf8FromConstantPool(this.constantPool, fieldNameAndTypeRef.descriptorIndex)
-                        });
+                        this.operandStack.push(module[this.getClassName(readUtf8FromConstantPool(this.constantPool, classRef.nameIndex))][fieldClassFileName]);
 
                         break;
                     }
@@ -183,7 +180,7 @@ export class Frame {
                             }
 
                         } else {
-                            this.operandStack.pop()[invokeMethodName](...methodArgs)
+                            this.operandStack.pop()[invokeMethodName](...methodArgs);
                         }
 
                         break;
